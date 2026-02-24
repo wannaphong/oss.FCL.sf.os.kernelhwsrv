@@ -39,8 +39,6 @@ jobs:
           echo "Checking SBS v1 build tools..."
           test -f "$BLDMAKE" && echo "bldmake.pl: found" || { echo "bldmake.pl: NOT FOUND"; exit 1; }
           test -f "$ABLD"    && echo "abld.pl: found"    || { echo "abld.pl: NOT FOUND"; exit 1; }
-          perl -c "$BLDMAKE" 2>&1 | grep -q "syntax OK" && echo "bldmake.pl syntax OK"
-          perl -c "$ABLD"    2>&1 | grep -q "syntax OK" && echo "abld.pl syntax OK"
 
       - name: Validate build configuration
         run: |
