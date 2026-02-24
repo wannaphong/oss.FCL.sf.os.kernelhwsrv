@@ -18,33 +18,29 @@ jobs:
         with:
           path: sf/os/kernelhwsrv
 
-      - name: Checkout buildtools (SBS/Raptor)
+      - name: Checkout buildtools
         uses: actions/checkout@v4
         with:
           repository: SymbianSource/oss.FCL.sf.os.buildtools
           path: sf/os/buildtools
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      - name: Install SBS dependencies
+      - name: Install build dependencies
         run: |
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends \
-            gcc g++ make \
-            libssl-dev \
             perl \
+            gcc g++ make \
             binutils
 
-      - name: Set up SBS (Raptor)
+      - name: Verify SBS v1 tools
         run: |
-          cd sf/os/buildtools/sbsv2/raptor
-          python3 -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
-          echo "SBS_HOME=$(pwd)" >> $GITHUB_ENV
-          echo "$(pwd)/bin" >> $GITHUB_PATH
+          BLDMAKE="sf/os/buildtools/sbsv1_os/e32toolp/bldmake/bldmake.pl"
+          ABLD="sf/os/buildtools/sbsv1_os/e32toolp/bldmake/abld.pl"
+          echo "Checking SBS v1 build tools..."
+          test -f "$BLDMAKE" && echo "bldmake.pl: found" || { echo "bldmake.pl: NOT FOUND"; exit 1; }
+          test -f "$ABLD"    && echo "abld.pl: found"    || { echo "abld.pl: NOT FOUND"; exit 1; }
+          perl -c "$BLDMAKE" 2>&1 | grep -q "syntax OK" && echo "bldmake.pl syntax OK"
+          perl -c "$ABLD"    2>&1 | grep -q "syntax OK" && echo "abld.pl syntax OK"
 
       - name: Validate build configuration
         run: |
@@ -54,12 +50,3 @@ jobs:
           echo "Checking .mmp files..."
           find . -name "*.mmp" | wc -l
           echo "Build configuration validation complete."
-
-      - name: Run SBS help
-        run: |
-          if command -v sbs &> /dev/null; then
-            sbs --help
-          else
-            echo "SBS not available in PATH; skipping sbs --help"
-          fi
-        continue-on-error: true
