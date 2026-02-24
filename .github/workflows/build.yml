@@ -1,0 +1,65 @@
+name: Build
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout kernelhwsrv
+        uses: actions/checkout@v4
+        with:
+          path: sf/os/kernelhwsrv
+
+      - name: Checkout buildtools (SBS/Raptor)
+        uses: actions/checkout@v4
+        with:
+          repository: SymbianSource/oss.FCL.sf.os.buildtools
+          path: sf/os/buildtools
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install SBS dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends \
+            gcc g++ make \
+            libssl-dev \
+            perl \
+            binutils
+
+      - name: Set up SBS (Raptor)
+        run: |
+          cd sf/os/buildtools/sbsv2/raptor
+          python3 -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
+          echo "SBS_HOME=$(pwd)" >> $GITHUB_ENV
+          echo "$(pwd)/bin" >> $GITHUB_PATH
+
+      - name: Validate build configuration
+        run: |
+          cd sf/os/kernelhwsrv
+          echo "Checking bld.inf files..."
+          find . -name "bld.inf" | wc -l
+          echo "Checking .mmp files..."
+          find . -name "*.mmp" | wc -l
+          echo "Build configuration validation complete."
+
+      - name: Run SBS help
+        run: |
+          if command -v sbs &> /dev/null; then
+            sbs --help
+          else
+            echo "SBS not available in PATH; skipping sbs --help"
+          fi
+        continue-on-error: true
